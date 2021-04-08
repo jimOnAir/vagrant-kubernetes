@@ -1,0 +1,4 @@
+---
+# handlers file for kubernetes-install
+- name: docker status
+  service: name=docker state=started

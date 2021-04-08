@@ -1,0 +1,8 @@
+- name: Setup master
+  hosts: all
+  gather_facts: yes
+  become: true
+  roles:
+    - { role: apt-setup }
+    - { role: kubernetes-install }
+    - { role: kubernetes-master }

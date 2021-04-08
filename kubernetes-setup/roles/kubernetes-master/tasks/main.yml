@@ -1,0 +1,67 @@
+---
+# tasks file for master
+
+# - name: Change criSocket to CRI-O
+#   lineinfile:
+#     path: /home/vagrant/.kube/config
+#     line: "  criSocket: /var/run/dockershim.sock"
+#     regexp: "^.*criSocket:.*$"
+
+- name: Initialize the Kubernetes cluster using kubeadm
+  command:
+    argv:
+      - kubeadm
+      - init
+      - --apiserver-advertise-address={{ master_ip }}
+      - --apiserver-cert-extra-sans={{ master_ip }}
+      - --node-name=k8s-master
+      - --pod-network-cidr={{ pod_network }}
+    creates: /etc/kubernetes/admin.conf
+
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+
+- name: Copy join command to local file
+  local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+  become: false
+
+- name: Create .kube dir
+  file:
+    state: directory
+    path: /home/vagrant/.kube
+    owner: vagrant
+    group: vagrant
+
+- name: Setup kubeconfig for vagrant user
+  copy:
+    remote_src: yes
+    src:  /etc/kubernetes/admin.conf
+    dest: /home/vagrant/.kube/config
+    group: vagrant
+    owner: vagrant
+
+- name: Install calico pod network
+  become: false
+  command: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+- name: Deploy dashboard
+  become: false
+  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/{{ dashboard_version }}/aio/deploy/recommended.yaml
+
+- name: Add an apt signing key for Helm
+  apt_key:
+    url: https://baltocdn.com/helm/signing.asc
+    state: present
+
+- name: Adding apt repository for Kubernetes
+  apt_repository:
+    repo: deb https://baltocdn.com/helm/stable/debian/ all main
+    state: present
+    filename: helm.list
+
+- name: Install helm
+  apt:
+    name: helm
+    state: present
+    update_cache: yes

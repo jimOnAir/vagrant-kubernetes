@@ -1,0 +1,5 @@
+---
+# defaults file for master
+pod_network: "192.168.128.0/16"
+master_ip: "192.168.200.2"
+dashboard_version: "v2.2.0"

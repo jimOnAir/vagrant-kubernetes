@@ -1,0 +1,3 @@
+.vagrant
+.vscode
+kubernetes-setup/join-command

@@ -1,0 +1,23 @@
+---
+# tasks file for apt-setup
+- name: Disable timers for unattended upgrade, so that none will be triggered by the `date -s` call.
+  systemd:
+    enabled: no
+    name:  "{{item}}"
+  with_items:
+    - 'apt-daily.timer'
+    - 'apt-daily-upgrade.timer'
+
+
+- name: Reload systemctl daemon to apply the new changes
+  systemd:
+    daemon_reload: yes
+
+- name: Wait for any possibly running unattended upgrade to finish
+  raw: systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+
+- name: Purge unattended upgrades
+  apt:
+    name: unattended-upgrades
+    state: absent
+    update_cache: yes
